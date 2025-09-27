@@ -1,0 +1,460 @@
+---
+title: "HW-1-Final"
+author: "Gowri"
+format:
+  html:
+    embed-resources: true
+fig-height: 10
+fig-width: 10
+editor: visual
+---
+
+## Step - 1
+
+1.  (30 points) Given the formulated question from the assignment description, you will now conduct EDA Checklist items 1-5. First, download 2002 and 2022 data for all sites in California from the [EPA Air Quality Data website](https://www.epa.gov/outdoor-air-quality-data/download-daily-data), then read the data into R. For each of the two datasets, check the dimensions, headers, footers, variable names and variable types. Check the distribution of the key variable we are analyzing (PM). Write up a summary of all of your findings.
+
+    ```{r}
+    #  Reading data 
+    PM25_2002 <- read.csv("Data/PM25_2002.csv")
+    PM25_2022 <- read.csv("Data/PM25_2022.csv")
+
+    # Check variable names
+    names(PM25_2002)
+    names(PM25_2022)
+
+    # If the first column is "V1", rename it
+    names(PM25_2002)[names(PM25_2002) == "V1"] <- "Date"
+    names(PM25_2022)[names(PM25_2022) == "V1"] <- "Date"
+
+    # If the first row is actually a duplicate header row, drop it
+    PM25_2002 <- PM25_2002[-1, ]
+    PM25_2022 <- PM25_2022[-1, ]
+
+
+    #  Check dimensions 
+    dim(PM25_2002)
+    dim(PM25_2022)
+
+    #Header 
+    head(PM25_2002)
+    head(PM25_2022)
+
+    #Footer 
+    tail(PM25_2002)
+    tail(PM25_2022)
+
+    #Variable name 
+    names(PM25_2002)
+    names(PM25_2022)
+
+    #structure 
+    str(PM25_2002)
+    str(PM25_2022)
+
+    #summary 
+    summary(PM25_2002) 
+    summary(PM25_2022)
+
+    #  Make key variable numeric as it is being considered as charachter 
+    PM25_2002$Daily.Mean.PM2.5.Concentration <-
+      as.numeric(PM25_2002$Daily.Mean.PM2.5.Concentration)
+
+    PM25_2022$Daily.Mean.PM2.5.Concentration <-
+      as.numeric(PM25_2022$Daily.Mean.PM2.5.Concentration)
+
+    #Distribution - Histogram 
+    hist(PM25_2002$Daily.Mean.PM2.5.Concentration)
+    hist(PM25_2022$Daily.Mean.PM2.5.Concentration)
+
+    # Distribution -  ggplot histograms & densities 
+
+    library(tidyverse)
+
+    ggplot(PM25_2002, aes(x = Daily.Mean.PM2.5.Concentration)) +
+      geom_histogram(bins = 30)
+
+    ggplot(PM25_2022, aes(x = Daily.Mean.PM2.5.Concentration)) +
+      geom_histogram(bins = 30)
+
+    ggplot(PM25_2002, aes(x = Daily.Mean.PM2.5.Concentration)) +
+      geom_density()
+
+    ggplot(PM25_2022, aes(x = Daily.Mean.PM2.5.Concentration)) +
+      geom_density()
+
+
+    ```
+
+**Summary 1 -**
+
+The 2002 dataset contained 15976 rows and 22 columns, while the 2022 dataset contained 59918 rows and 22 columns. The headers and footers were looked into using the code  head() and tail(). The result of this code confirmed that both datasets included variables such as *Date*, *County*, *Local.Site.Name*, and *Daily.Mean.PM2.5.Concentration*. Most variables were read in as character or numeric. The key variable *Daily.Mean.PM2.5.Concentration* was initially read as character and was changed to be read as numeric.
+
+Summary for PM2.5 showed that in 2002, values ranged from 0.00 to 104.30 µg/m³, with a median of about 12.00 µg/m³. In contrast, 2022 values ranged from –6.70 to 302.50 µg/m³, with a median of median of 6.80 µg/m³. These values suggest that concentrations of particles have decreased over the 20-year period.
+
+The distributions of PM2.5 were visualized using histograms and density plots. The 2002 histogram had wide spread while the 2022 histogram was shifted toward lower concentrations and had narrow spread, with fewer extreme values. These visualizations also support the conclusion the PM2.5 concentation of particles have decreased in California between 2002 and 2022.
+
+## Step - 2
+
+2.  (10 points) Combine the two years of data into one data frame. Use the `Date` variable to create a new column for year, which will serve as an identifier. Change the names of the key variables so that they are easier to refer to in your code.
+
+```{r}
+
+library(tidyverse)   
+library(lubridate)  
+
+# Checkig the name of the column 
+names(PM25_2002)
+names(PM25_2022)
+
+library(lubridate)
+
+PM25_2002 <- PM25_2002 %>%
+  mutate(Date = mdy(Date),
+         year = year(Date))
+
+PM25_2022 <- PM25_2022 %>%
+  mutate(Date = mdy(Date),
+         year = year(Date))
+
+#Changing the name of the variables 
+PM25_2002 <- PM25_2002 %>%
+  rename(pm25     = Daily.Mean.PM2.5.Concentration,
+         Site     = Site.ID,
+         SiteName = Local.Site.Name,
+         Latitude = Site.Latitude,
+         Longitude= Site.Longitude)
+
+PM25_2022 <- PM25_2022 %>%
+  rename(pm25     = Daily.Mean.PM2.5.Concentration,
+         Site     = Site.ID,
+         SiteName = Local.Site.Name,
+         Latitude = Site.Latitude,
+         Longitude= Site.Longitude)
+
+
+# PM25 should be read as numeric 
+PM25_2002 <- PM25_2002 %>% mutate(pm25 = as.numeric(pm25))
+PM25_2022 <- PM25_2022 %>% mutate(pm25 = as.numeric(pm25))
+
+# Combining data 
+PM25_all <- bind_rows(PM25_2002, PM25_2022)
+
+# Checking the dimensions 
+dim(PM25_all)
+names(PM25_all)
+head(PM25_all)
+tail(PM25_all)
+table(PM25_all$year, useNA = "ifany")
+nrow(PM25_2002) + nrow(PM25_2022); nrow(PM25_all)
+
+PM25_all %>%
+  select(Date, year, pm25, Site, SiteName, Latitude, Longitude) %>%
+  arrange(year, Date) %>%
+  head(12)
+
+sapply(PM25_all[c("Date","year","pm25")], class)
+summary(PM25_all$pm25)
+
+unique(PM25_all$year)
+
+```
+
+**Summary-**
+
+Since the output of unique(PM25_all\$year) is 2002, this shows that both th data are combined successfully
+
+### Step - 3
+
+3.  (20 points) Create a basic map (or maps) in either `leaflet` or `ggplot` showing the locations of the monitoring sites, using different colors for each year. Summarize the spatial distribution of the sites. Does this distribution change from 2002 to 2022?
+
+```{r}
+library(tidyverse)
+library(leaflet)
+
+# collapse daily rows → one row per site–year
+sites <- PM25_all %>%
+  select(year, County, Latitude, Longitude) %>%
+  mutate(
+    Latitude  = as.numeric(Latitude),
+    Longitude = as.numeric(Longitude)
+  ) %>%
+  filter(!is.na(Latitude), !is.na(Longitude)) %>%
+  count(County, Latitude, Longitude, year, name = "n_days")   # class/lab style
+
+# palette for numeric years
+year_pal <- colorNumeric(c("red","blue"), domain = c(2002, 2022))
+
+leaflet(sites) %>%
+  addProviderTiles("OpenStreetMap") %>%
+  addCircles(lat=~Latitude, lng=~Longitude, color=~year_pal(year),
+             opacity=1, fillOpacity=1, radius=500) %>%
+  addLegend("bottomleft",
+            colors = c(year_pal(2002), year_pal(2022)),
+            labels = c("2002","2022"),
+            title = "Year", opacity = 1)
+
+
+```
+
+**Summary -**
+
+The maps show that monitoring sites are spread across California, with many around major areas such as the Bay Area, Los Angeles, and the Central Valley. The total number of sites increased from 2002 to 2022 (15,976 rows vs. 59,918 rows in the raw datasets). This increase possibly the addition of new monitoring sites in certain counties.
+
+Overall, geographic coverage was similar even though the number of monitoring sites increased in 2022.
+
+## Step - 4
+
+4.  (10 points) Check for any data issues such as missing or implausible values of PM in the combined dataset. Calculate the proportion of missing/implausible values for each year and report any temporal patterns you see in these observations.
+
+```{r}
+
+#  Reading data 
+PM25_2002 <- read.csv("Data/PM25_2002.csv")
+PM25_2022 <- read.csv("Data/PM25_2022.csv")
+
+#summary of pm25
+summary(PM25_all$pm25)
+
+# Missing values by year
+table(PM25_all$year, is.na(PM25_all$pm25))
+
+# Proportion of missing/ implausible data for 2002
+sum(PM25_all$year == 2002 & is.na(PM25_all$pm25)) / sum(PM25_all$year == 2002)
+
+# Proportion of missing/implausible values  for 2022
+sum(PM25_all$year == 2022 & is.na(PM25_all$pm25)) / sum(PM25_all$year == 2022)
+
+# Implausible values are values which are pm25 < 0 OR pm25 > 500
+table(PM25_all$year, PM25_all$pm25 < 0 | PM25_all$pm25 > 500)
+
+# Proportion of implausible values for 2002
+sum(PM25_all$year == 2002 & (PM25_all$pm25 < 0 | PM25_all$pm25 > 500)) / sum(PM25_all$year == 2002)
+
+# Proportion of implausible data  for 2022
+sum(PM25_all$year == 2022 & (PM25_all$pm25 < 0 | PM25_all$pm25 > 500)) / sum(PM25_all$year == 2022)
+
+#  count negatives separately
+table(PM25_all$year, PM25_all$pm25 < 0)
+
+```
+
+**Summary:** For 2002, PM2.5 values ranged from 0.00 to 104.30 µg/m³, with a median of 12.00 µg/m³. There were no missing or implausible values for 2002. But for 2022, values ranged from –6.70 to 302.50 µg/m³, with a median of 7.60 µg/m³. There was no missing data but 215 implausible values were found. The implausible values included negative values and outliers. These implausible values were present in 2022 dataset and not in 2002 dataset.
+
+## Step - 5
+
+1.  (30 points) Explore the main question of interest at three different levels of spatial resolution. Create data visualizations (e.g. boxplots, histograms, line plots, violin plots) **and** summary statistics that best suit each level of the analysis. Be sure to write up explanations of what you observe at each level.
+
+-   Level 1: State. Examine the primary question for the entire state.
+
+-   Level 2: County. Examine the primary question for every county in California.
+
+-   Level 3: City. Restrict the data to sites in Los Angeles county and examine the primary question for every site.
+
+```{r}
+# 5.1 - LEVEL 1 - STATE 
+
+# Libraries 
+library(tidyverse)
+library(data.table)
+library(lubridate)
+
+#  Reading data 
+PM25_2002 <- read.csv("Data/PM25_2002.csv")
+PM25_2022 <- read.csv("Data/PM25_2022.csv")
+
+#  Combine 2002 + 2022 
+
+PM25_2002$year <- 2002
+PM25_2022$year <- 2022
+
+PM_state <- rbind(PM25_2002, PM25_2022)
+
+#  Keeping the needed columns only and renaming them 
+
+names(PM_state)[names(PM_state) == "Daily.Mean.PM2.5.Concentration"] <- "pm"
+names(PM_state)[names(PM_state) == "Date"] <- "date"
+
+# emiving implausible data
+PM_state <- PM_state %>% filter(pm >= 0)
+
+# summary statistics by the year 
+PM_state %>%
+  summarize(
+    n = n(),
+    mean = mean(pm, na.rm = TRUE),
+    sd = sd(pm, na.rm = TRUE),
+    median = median(pm, na.rm = TRUE),
+    q25 = quantile(pm, 0.25, na.rm = TRUE),
+    q75 = quantile(pm, 0.75, na.rm = TRUE),
+    .by = year
+  )
+
+# Data visualization  
+# Histogram for 2002
+hist(PM25_2002$Daily.Mean.PM2.5.Concentration)
+
+# Histogram for 2022
+hist(PM25_2022$Daily.Mean.PM2.5.Concentration)
+
+#  Boxplot by year
+ggplot(PM_state, aes(x = factor(year), y = pm, fill = factor(year))) +
+  geom_boxplot() +
+  labs(title = "Daily PM2.5 by Year (Statewide)",
+       x = "Year", y = "Daily PM2.5 (µg/m³)") +
+  theme_bw() +
+  theme(legend.position = "none")
+
+
+
+```
+
+**EXPLANATION-**
+
+Across the state, PM2.5 concentrations decreased between 2002 and 2022. In 2002, the mean daily concentration was 16.1 µg/m³ with a median of 12.0 µg/m³, while in 2022 the mean dropped to 8.4 µg/m³ and the median to 6.8 µg/m³. The histograms and boxplots further show that 2002 had a wider spread, whereas in 2022 the distribution was tighter. These results indicate an improvement in air quality over the 20-year period.
+
+```{r}
+#5.2- LEVEL 2 - COUNTY 
+
+library(tidyverse)
+
+names(PM_state)[names(PM_state) == "Daily.Mean.PM2.5.Concentration"] <- "pm"
+names(PM_state)[names(PM_state) == "Date"] <- "date"
+
+# excluding implausible data 
+PM_state <- PM_state %>% filter(pm >= 0)
+
+#summary statistics table 
+county_year_summ <- PM_state %>%
+  summarize(
+    n      = n(),
+    mean   = mean(pm, na.rm = TRUE),
+    sd     = sd(pm, na.rm = TRUE),
+    median = median(pm, na.rm = TRUE),
+    q25    = quantile(pm, 0.25, na.rm = TRUE),
+    q75    = quantile(pm, 0.75, na.rm = TRUE),
+    .by = c(County, year)
+  )
+county_year_summ
+
+ggplot(PM_state, aes(x = County, y = pm, fill = factor(year))) +
+  geom_boxplot() +
+  facet_wrap(~ year, ncol = 1, scales = "free_y") +
+  labs(title = "Daily PM2.5 by County (California)",
+       x = "Daily PM2.5 (µg/m³)", y = "County", fill = "Year") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+
+
+# Calculating means 
+county_means <- PM_state %>%
+  summarize(pm_mean = mean(pm, na.rm = TRUE), .by = c(County, year))
+
+# Bar plot
+# Base R: make a simple group from the first letter of County
+county_means$Group <- substring(as.character(county_means$County), 1, 1)
+
+# 2002
+
+
+# --- Bar plot for 2022 ---
+# Make sure year is factor for clear labels
+county_means$year <- factor(county_means$year)
+
+# Faceted barplot
+ggplot(county_means, aes(x = year, y = pm_mean, fill = year)) +
+  geom_col(position = "dodge") +
+  facet_wrap(~ County, scales = "free_y") +
+  labs(title = "Mean Daily PM2.5 by County (2002 vs 2022)",
+       x = "Year", y = "Mean PM2.5 (µg/m³)", fill = "Year") +
+  theme_bw() +
+  theme(strip.text = element_text(size = 8, face = "bold"))
+
+
+
+
+
+
+
+```
+
+**Explanation-**\
+At the county level, air quality improved across California between 2002 and 2022. In 2002, most counties had mean PM2.5 levels in the 12–20 µg/m³ range. By 2022, these county means had generally dropped to 4–10 µg/m³, reflecting a clear decline in typical daily exposure.The medians also shifted downward. Boxplots show that in 2002, many counties had higher medians and wide spreads, with frequent outliers above 40–60 µg/m³. In contrast, 2022 distributions were compressed, with lower medians, tighter interquartile ranges, and far fewer extreme days.
+
+```{r}
+#5.3- LEVEL 3 - CITY
+
+
+# Combine 2002 + 2022 
+PM25_2002$year <- 2002
+PM25_2022$year <- 2022
+pm_all <- rbind(PM25_2002, PM25_2022)
+
+##columns needed 
+pm_all$date <- as.Date(pm_all$Date, format = "%m/%d/%Y")
+pm_all$year <- as.integer(format(pm_all$date, "%Y"))
+pm_all$site <- pm_all$Local.Site.Name
+pm_all$pm   <- pm_all$Daily.Mean.PM2.5.Concentration
+
+## 2) EXCLUDE implausible values 
+pm_all <- subset(pm_all, pm >= 0)
+
+# Subset to Los Angeles & years 2002/2022
+la_sites <- subset(pm_all, County == "Los Angeles" & (year == 2002 | year == 2022))
+
+#SUMMARY STATISTICS TABLES (base R only)
+# Mean
+tapply(la_sites$pm, list(la_sites$site, la_sites$year), mean,   na.rm = TRUE)
+# Median
+tapply(la_sites$pm, list(la_sites$site, la_sites$year), median, na.rm = TRUE)
+# Standard Deviation
+tapply(la_sites$pm, list(la_sites$site, la_sites$year), sd,     na.rm = TRUE)
+
+#Visual distribution
+library(ggplot2)
+
+# A) Boxplot 
+ggplot(la_sites, aes(x = site, y = pm, fill = factor(year))) +
+  geom_boxplot() +
+  coord_flip() +
+  scale_fill_manual(values = c("2002" = "red", "2022" = "blue")) +
+  labs(title = "Daily PM2.5 by Site (Los Angeles County)",
+       x = "Site", y = "PM2.5 (µg/m³)", fill = "Year") +
+  theme_bw()
+
+# B) Histogram per site (2002 vs 2022)
+ggplot(la_sites, aes(x = pm, fill = factor(year))) +
+  geom_histogram(position = "identity", alpha = 0.5, bins = 30) +
+  facet_wrap(~ site, scales = "free_y") +
+  scale_fill_manual(values = c("2002" = "red", "2022" = "blue")) +
+  labs(title = "Distribution of Daily PM2.5 by Site (LA County)",
+       x = "PM2.5 (µg/m³)", y = "Count", fill = "Year") +
+  theme_bw()
+
+# C) Violin plot 
+ggplot(la_sites, aes(x = site, y = pm, fill = factor(year))) +
+  geom_violin(position = "dodge") +
+  coord_flip() +
+  scale_fill_manual(values = c("2002" = "red", "2022" = "blue")) +
+  labs(title = "PM2.5 Distribution by Site (Los Angeles County)",
+       x = "Site", y = "PM2.5 (µg/m³)", fill = "Year") +
+  theme_bw()
+
+# D) Mean ± SD per site (statistical summary graph by year)
+ggplot(la_sites, aes(x = site, y = pm, color = factor(year))) +
+  stat_summary(fun.data = "mean_sdl", geom = "pointrange",
+               position = position_dodge(width = 0.6)) +
+  coord_flip() +
+  scale_color_manual(values = c("2002" = "red", "2022" = "blue")) +
+  labs(title = "PM2.5 Mean ± SD by Site (Los Angeles County)",
+       x = "Site", y = "PM2.5 (µg/m³)", color = "Year") +
+  theme_bw()
+
+```
+
+**Explanation-**
+
+At the city level, within Los Angeles County, air quality improved between 2002 and 2022. In 2002, most sites reported mean PM2.5 levels well above 12 µg/m³, with some locations regularly exceeding 20 µg/m³. By 2022, these site-level means typically fell to around 5–10 µg/m³, showing a clear reduction in daily exposure.
+
+The medians also declined. Boxplots and violin plots indicate that in 2002, many sites had higher medians, wide spreads, whereas in 2022 the distributions were compressed with lower medians.
+
+Overall, the Los Angeles site-level analysis mirrors the county and statewide results: air quality has improved significantly over time. Nonetheless, site-to-site differences persist, maybe due to local emission sources and neighborhood-level environmental conditions.
